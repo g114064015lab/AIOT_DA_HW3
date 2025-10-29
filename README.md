@@ -1,6 +1,10 @@
 # SMS Spam Classifier
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://sms-spam-classifier-g114064015.streamlit.app)
+
 A simple but effective spam classifier using scikit-learn. Includes preprocessing, model training, and inference capabilities.
+
+🔗 **Try it now:** [SMS Spam Classifier Web App](https://sms-spam-classifier-g114064015.streamlit.app)
 
 ## Quick Start
 
@@ -88,8 +92,33 @@ Tests include:
 - Model training and evaluation
 - End-to-end pipeline validation
 
+## Live Demo
+
+The app is deployed on Streamlit Cloud and can be accessed here:
+https://sms-spam-classifier-g114064015.streamlit.app
+
+Features of the web interface:
+- 🚀 Instant spam detection
+- 📊 Confidence scores for predictions
+- 🔍 Text preprocessing visualization
+- 💡 Model information and details
+- 📱 Mobile-friendly design
+
 ## Requirements
 
 - Python 3.8+
 - See `requirements.txt` for package dependencies
 - For development: See `tests/requirements-test.txt`
+- For Streamlit deployment: See `requirements-streamlit.txt`
+
+## Deployment
+
+This project is deployed on Streamlit Cloud. To deploy your own instance:
+
+1. Fork this repository
+2. Visit [share.streamlit.io](https://share.streamlit.io)
+3. Create a new app using your forked repository
+4. Set the following:
+   - Main file path: `app.py`
+   - Requirements file: `requirements-streamlit.txt`
+   - Python version: 3.9
