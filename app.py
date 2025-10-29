@@ -300,8 +300,7 @@ with st.expander("📊 Dataset Analysis", expanded=True):
         
             for patch in ax.patches:
                 patch.set_hatch('//')         
-                patch.set_facecolor('#FF69B4') 
-                patch.set_edgecolor('black')   
+                patch.set_edgecolor('#FF69B4')   
             
             ax.grid(color='#FFC0CB', linestyle='--', linewidth=1)
             sns.despine(left=True, bottom=True) 
