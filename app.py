@@ -10,11 +10,35 @@ st.set_page_config(
     page_icon="📱"
 )
 
+def train_model():
+    """Train a new model if one doesn't exist"""
+    import pandas as pd
+    from src.train import train_model
+    
+    # Download dataset
+    url = "https://raw.githubusercontent.com/g114064015lab/AIOT_DA_HW3/master/data/sms_spam_no_header.csv"
+    try:
+        df = pd.read_csv(url, encoding='latin-1', names=['label', 'text'])
+        df['label'] = (df['label'] == 'spam').astype(int)
+        
+        # Train model
+        model = train_model(df['text'], df['label'])
+        
+        # Create models directory if it doesn't exist
+        os.makedirs('models', exist_ok=True)
+        
+        # Save model
+        joblib.dump(model, 'models/final_model.pkl')
+        return model
+    except Exception as e:
+        st.error(f"Error training model: {str(e)}")
+        return None
+
 def load_model():
     model_path = "models/final_model.pkl"
     if not os.path.exists(model_path):
-        st.error("⚠️ Model not found! Please train the model first using main.py")
-        return None
+        st.warning("⚠️ Model not found! Training a new model...")
+        return train_model()
     return joblib.load(model_path)
 
 def main():
