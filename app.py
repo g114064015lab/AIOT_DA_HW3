@@ -32,7 +32,6 @@ st.set_page_config(
 
 def train_model():
     """Train a new model if one doesn't exist"""
-    """Train a new model if one doesn't exist"""
     
     # Use a public dataset URL
     url = "https://raw.githubusercontent.com/mohitgupta-omg/Kaggle-SMS-Spam-Detection/master/spam.csv"
