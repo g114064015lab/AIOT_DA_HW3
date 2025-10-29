@@ -346,7 +346,8 @@ with st.expander("📊 Dataset Analysis", expanded=True):
                 if PLOTTING_AVAILABLE:
                     fig, ax = plt.subplots(figsize=(8, 4))
                     words, counts = zip(*spam_common)
-                    sns.barplot(x=list(counts), y=list(words))
+                    custom_palette = sns.color_palette("blend:#4B0082,#FFB6C1", n_colors=10)
+                    sns.barplot(x=list(counts), y=list(words), palette=custom_palette)
                     plt.title('Top Spam Words')
                     st.pyplot(fig)
                 else:
@@ -365,7 +366,8 @@ with st.expander("📊 Dataset Analysis", expanded=True):
                 if PLOTTING_AVAILABLE:
                     fig, ax = plt.subplots(figsize=(8, 4))
                     words, counts = zip(*ham_common)
-                    sns.barplot(x=list(counts), y=list(words))
+                    custom_palette = sns.color_palette("blend:#4B0082,#FFB6C1", n_colors=10)
+                    sns.barplot(x=list(counts), y=list(words), palette=custom_palette)
                     plt.title('Top Ham Words')
                     st.pyplot(fig)
                 else:
