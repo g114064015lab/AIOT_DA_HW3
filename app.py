@@ -4,6 +4,9 @@ import os
 import pandas as pd
 import re
 import string
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
 
 def clean_text(text):
     """Clean and preprocess text"""
@@ -29,10 +32,7 @@ st.set_page_config(
 
 def train_model():
     """Train a new model if one doesn't exist"""
-    import pandas as pd
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.naive_bayes import MultinomialNB
-    from sklearn.pipeline import Pipeline
+    """Train a new model if one doesn't exist"""
     
     # Use a public dataset URL
     url = "https://raw.githubusercontent.com/mohitgupta-omg/Kaggle-SMS-Spam-Detection/master/spam.csv"
