@@ -1,10 +1,10 @@
 # SMS Spam Classifier
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://sms-spam-classifier-g114064015.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://g114064015lab-aiot-da-hw3-app-qw62t5.streamlit.app)
 
 A simple but effective spam classifier using scikit-learn. Includes preprocessing, model training, and inference capabilities.
 
-🔗 **Try it now:** [SMS Spam Classifier Web App](https://sms-spam-classifier-g114064015.streamlit.app)
+🔗 **Try it now:** [SMS Spam Classifier Web App](https://g114064015lab-aiot-da-hw3-app-qw62t5.streamlit.app)
 
 ## Quick Start
 
@@ -95,7 +95,7 @@ Tests include:
 ## Live Demo
 
 The app is deployed on Streamlit Cloud and can be accessed here:
-https://sms-spam-classifier-g114064015.streamlit.app
+https://g114064015lab-aiot-da-hw3-app-qw62t5.streamlit.app
 
 Features of the web interface:
 - 🚀 Instant spam detection
