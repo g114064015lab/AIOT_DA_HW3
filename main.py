@@ -10,14 +10,13 @@ from pathlib import Path
 import argparse
 import logging
 import re
+import json
 
 import joblib
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import Pipeline
+
+from src.train import train_and_evaluate, save_pipeline
 
 
 DATA_URL = (
@@ -70,11 +69,48 @@ def load_data(path: Path) -> pd.DataFrame:
     return df
 
 
-def build_pipeline() -> Pipeline:
-    vect = TfidfVectorizer(max_df=0.9, ngram_range=(1, 2), stop_words="english")
-    clf = MultinomialNB()
-    pipeline = Pipeline([("tfidf", vect), ("clf", clf)])
-    return pipeline
+def build_and_train(data_path: Path, out_path: Path, test_size: float, random_state: int):
+    logging.info("Loading data from %s", data_path)
+    df = load_data(data_path)
+    logging.info("Loaded %d rows (spam=%d, ham=%d)", len(df), (df.label == "spam").sum(), (df.label == "ham").sum())
+
+    X = df["message"].values
+    y = df["label"].values
+
+    # Split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, stratify=y, random_state=random_state
+    )
+
+    # Train using src.train utilities (quick improvements)
+    logging.info("Training Logistic Regression with TF-IDF features...")
+    pipeline, metrics = train_and_evaluate(X_train, X_test, y_train, y_test, model_type='lr', do_grid_search=False)
+
+    # Save pipeline
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    save_pipeline(pipeline, out_path)
+    logging.info("Saved pipeline to %s", out_path)
+
+    # Save numeric metrics to JSON
+    try:
+        # metrics contains classification_report string and confusion matrix
+        from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+        y_pred = pipeline.predict(X_test)
+        numeric = {
+            'accuracy': float(accuracy_score(y_test, y_pred)),
+            'precision': float(precision_score(y_test, y_pred, pos_label='spam', zero_division=0)),
+            'recall': float(recall_score(y_test, y_pred, pos_label='spam', zero_division=0)),
+            'f1': float(f1_score(y_test, y_pred, pos_label='spam', zero_division=0)),
+        }
+        with open(out_path.parent / 'metrics.json', 'w') as fh:
+            json.dump(numeric, fh)
+        logging.info("Saved metrics to %s", out_path.parent / 'metrics.json')
+    except Exception as e:
+        logging.warning("Failed to compute/save numeric metrics: %s", e)
+
+    # Print classification report
+    print(metrics.get('classification_report', metrics.get('classification_report', '')))
+    return pipeline, metrics
 
 
 def main():
@@ -94,31 +130,7 @@ def main():
     if not data_path.exists():
         download_dataset(DATA_URL, data_path)
 
-    logging.info("Loading data from %s", data_path)
-    df = load_data(data_path)
-    logging.info("Loaded %d rows (spam=%d, ham=%d)", len(df), (df.label == "spam").sum(), (df.label == "ham").sum())
-
-    X = df["message"].values
-    y = df["label"].values
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=args.test_size, stratify=y, random_state=args.random_state
-    )
-
-    pipeline = build_pipeline()
-    logging.info("Training baseline pipeline (TF-IDF + MultinomialNB)...")
-    pipeline.fit(X_train, y_train)
-
-    logging.info("Evaluating on test set...")
-    y_pred = pipeline.predict(X_test)
-    print(classification_report(y_test, y_pred, digits=4))
-    cm = confusion_matrix(y_test, y_pred, labels=["ham", "spam"])
-    logging.info("Confusion matrix (rows=true, cols=pred):\n%s", cm)
-
-    # Save model
-    model_path.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(pipeline, model_path)
-    logging.info("Saved pipeline to %s", model_path)
+    build_and_train(data_path, model_path, args.test_size, args.random_state)
 
 
 if __name__ == "__main__":
