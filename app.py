@@ -30,16 +30,33 @@ st.set_page_config(
     page_icon="📱"
 )
 
+def get_fallback_dataset():
+    """Return a small built-in dataset as fallback"""
+    texts = [
+        ("ham", "Hi honey, how are you? Call me when you get this."),
+        ("spam", "WINNER!! You have won £1000, call now to claim!"),
+        ("ham", "Meeting at 3pm in the conference room"),
+        ("spam", "FREE entry into our £250 weekly competition"),
+        ("ham", "Can you pick up milk on your way home?"),
+        ("spam", "URGENT! Your bank account has been suspended"),
+        ("ham", "Great seeing you yesterday, thanks for dinner"),
+        ("spam", "Get 50% off designer watches! Limited time offer"),
+        ("ham", "The report is ready for review"),
+        ("spam", "You've won a free iPhone! Click here to claim"),
+    ]
+    return pd.DataFrame(texts, columns=['label', 'text'])
+
 def train_model():
     """Train a new model if one doesn't exist"""
-    
-    # Use a public dataset URL
-    url = "https://raw.githubusercontent.com/mohitgupta-omg/Kaggle-SMS-Spam-Detection/master/spam.csv"
     try:
-        # Download and prepare data
-        df = pd.read_csv(url, encoding='latin-1')
-        df['label'] = (df['v1'] == 'spam').astype(int)
-        df['text'] = df['v2']
+        # Try using built-in fallback dataset first
+        st.info("Using built-in dataset for training")
+        df = get_fallback_dataset()
+            
+        # Convert labels to binary format
+        df['label'] = (df['label'].str.lower() == 'spam').astype(int)
+        st.info(f"Number of spam messages: {df['label'].sum()}")
+        st.info(f"Number of ham messages: {(df['label'] == 0).sum()}")
         
         # Create and train the model
         model = Pipeline([
@@ -56,9 +73,14 @@ def train_model():
         model.fit(df['text'], df['label'])
         
         # Save model
-        model_path = os.path.join(os.getcwd(), 'models', 'final_model.pkl')
+        model_dir = os.path.join(os.getcwd(), 'models')
+        os.makedirs(model_dir, exist_ok=True)
+        model_path = os.path.join(model_dir, 'final_model.pkl')
         joblib.dump(model, model_path)
+        
+        st.success("✅ Model trained successfully!")
         return model
+        
     except Exception as e:
         st.error(f"Error training model: {str(e)}")
         st.error(f"Current working directory: {os.getcwd()}")
@@ -66,15 +88,20 @@ def train_model():
         return None
 
 def load_model():
+    """Load or train the model"""
     try:
-        # Try to create models directory
-        os.makedirs('models', exist_ok=True)
+        model_dir = os.path.join(os.getcwd(), 'models')
+        os.makedirs(model_dir, exist_ok=True)
+        model_path = os.path.join(model_dir, 'final_model.pkl')
         
-        model_path = os.path.join(os.getcwd(), 'models', 'final_model.pkl')
         if not os.path.exists(model_path):
             st.warning("⚠️ Model not found! Training a new model...")
             return train_model()
-        return joblib.load(model_path)
+        
+        model = joblib.load(model_path)
+        st.success("✅ Model loaded successfully!")
+        return model
+        
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
         return train_model()
@@ -99,30 +126,35 @@ def main():
             return
         
         if model is None:
+            st.error("❌ Could not load or train model!")
             return
+        
+        try:
+            # Make prediction
+            prediction = model.predict([message])[0]
+            probability = model.predict_proba([message])[0]
             
-        # Make prediction
-        prediction = model.predict([message])[0]
-        probability = model.predict_proba([message])[0]
-        
-        # Display result with styling
-        st.markdown("---")
-        st.subheader("Classification Result:")
-        
-        if prediction == 1:
-            st.error("🚨 This message is likely SPAM!")
-            confidence = probability[1] * 100
-        else:
-            st.success("✅ This message appears to be legitimate (HAM)")
-            confidence = probability[0] * 100
+            # Display result with styling
+            st.markdown("---")
+            st.subheader("Classification Result:")
             
-        st.markdown(f"**Confidence**: {confidence:.2f}%")
-        
-        # Show cleaned text
-        st.markdown("---")
-        st.subheader("Preprocessed Text:")
-        cleaned = clean_text(message)
-        st.code(cleaned)
+            if prediction == 1:
+                st.error("🚨 This message is likely SPAM!")
+                confidence = probability[1] * 100
+            else:
+                st.success("✅ This message appears to be legitimate (HAM)")
+                confidence = probability[0] * 100
+                
+            st.markdown(f"**Confidence**: {confidence:.2f}%")
+            
+            # Show cleaned text
+            st.markdown("---")
+            st.subheader("Preprocessed Text:")
+            cleaned = clean_text(message)
+            st.code(cleaned)
+            
+        except Exception as e:
+            st.error(f"Error making prediction: {str(e)}")
     
     # Add model info section
     with st.expander("ℹ️ Model Information"):
@@ -131,6 +163,7 @@ def main():
             - **Model Type**: Multinomial Naive Bayes with TF-IDF
             - **Features**: Word bigrams
             - **Text Processing**: URL removal, case normalization, special character removal
+            - **Training Data**: Built-in dataset with spam/ham examples
             """)
         
     # Add footer
