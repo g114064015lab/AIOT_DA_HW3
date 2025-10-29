@@ -86,9 +86,9 @@ def preprocess_text(text: str,
 
 def build_vectorizer(max_features: Optional[int] = None,
                     max_df: float = 0.9,
-                    min_df: int = 5,
+                    min_df: int = 3,
                     ngram_range: tuple = (1, 2),
-                    use_char_ngrams: bool = True) -> TfidfVectorizer:
+                    use_char_ngrams: bool = False) -> TfidfVectorizer:
     """Build a TF-IDF vectorizer with configurable parameters."""
     params = {
         'max_features': max_features,
@@ -97,14 +97,14 @@ def build_vectorizer(max_features: Optional[int] = None,
         'ngram_range': ngram_range,
         'stop_words': 'english',  # Additional stopword removal at vectorizer level
     }
-    
+    # If character n-grams are explicitly requested, switch analyzer,
+    # otherwise use word n-grams (default) which typically works well for SMS.
     if use_char_ngrams:
-        # Add character n-grams (helps with misspellings, etc.)
         params.update({
             'analyzer': 'char_wb',
             'ngram_range': (3, 5),  # Common character ngram range
         })
-    
+
     return TfidfVectorizer(**params)
 
 

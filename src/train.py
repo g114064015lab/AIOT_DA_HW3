@@ -87,8 +87,15 @@ def train_and_evaluate(X_train: np.ndarray,
                       n_cv_folds: int = 5,
                       random_state: int = 42) -> Tuple[Pipeline, Dict[str, Any]]:
     """Train a model with optional grid search and return metrics."""
-    # Create base pipeline
-    pipeline = create_pipeline(model_type, model_params={'random_state': random_state})
+    # Create base pipeline. Only pass random_state / solver params to models that accept them.
+    model_params = None
+    if model_type == 'lr':
+        # Use class weighting to handle imbalance and ensure convergence
+        model_params = {'class_weight': 'balanced', 'solver': 'liblinear', 'max_iter': 1000, 'random_state': random_state}
+    elif model_type in ('svm', 'rf'):
+        model_params = {'random_state': random_state}
+
+    pipeline = create_pipeline(model_type, model_params=model_params)
     
     if do_grid_search:
         # Run grid search CV
