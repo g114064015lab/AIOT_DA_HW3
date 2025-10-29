@@ -4,9 +4,19 @@ import os
 import pandas as pd
 import re
 import string
-from sklearn.feature_extraction.text import TfidfVectorizer
+from collections import Counter
+from sklearn.feature_extraction.text import TfidfVectorizer, ENGLISH_STOP_WORDS
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
+from sklearn.metrics import confusion_matrix
+
+# Optional plotting libs
+try:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    PLOTTING_AVAILABLE = True
+except Exception:
+    PLOTTING_AVAILABLE = False
 
 def clean_text(text):
     """Clean and preprocess text"""
@@ -165,6 +175,77 @@ def main():
             - **Text Processing**: URL removal, case normalization, special character removal
             - **Training Data**: Built-in dataset with spam/ham examples
             """)
+            # Dataset analysis (word counts + confusion matrix)
+            st.write("---")
+            st.subheader("Dataset analysis & model diagnostics")
+            analyze = st.checkbox("Show dataset analysis (word counts + confusion matrix)")
+            if analyze:
+                data_path = os.path.join(os.getcwd(), 'data', 'sms_spam_no_header.csv')
+                if not os.path.exists(data_path):
+                    st.warning("Dataset not found at data/sms_spam_no_header.csv")
+                else:
+                    try:
+                        df = pd.read_csv(data_path, header=None, names=['label', 'text'], encoding='utf-8')
+                        # Clean texts
+                        df['clean'] = df['text'].fillna('').astype(str).map(clean_text)
+
+                        # Tokenize and count words (exclude English stop words)
+                        stopset = set(ENGLISH_STOP_WORDS)
+                        all_tokens = []
+                        for t in df['clean']:
+                            toks = [w for w in t.split() if w and w not in stopset]
+                            all_tokens.extend(toks)
+                        counter = Counter(all_tokens)
+                        top_n = 20
+                        most = counter.most_common(top_n)
+                        if most:
+                            words, counts = zip(*most)
+                            wc_df = pd.DataFrame({'word': words, 'count': counts}).set_index('word')
+                            st.markdown("**Top words (excluding stopwords)**")
+                            # Prefer matplotlib bar chart with counts shown if available
+                            if PLOTTING_AVAILABLE:
+                                fig, ax = plt.subplots(figsize=(8, 4))
+                                sns.barplot(x=list(counts), y=list(words), palette='viridis', ax=ax)
+                                ax.set_xlabel('Count')
+                                ax.set_ylabel('Word')
+                                ax.set_title('Top words in dataset')
+                                # annotate counts
+                                for i, v in enumerate(counts):
+                                    ax.text(v + max(counts)*0.01, i, str(v), va='center')
+                                st.pyplot(fig)
+                            else:
+                                st.bar_chart(wc_df)
+
+                        # Confusion matrix on the dataset (model predictions)
+                        st.markdown("**Confusion matrix on full dataset**")
+                        try:
+                            y_true = df['label'].astype(str).str.strip().str.lower()
+                            # Predict — map types
+                            preds = model.predict(df['text'].fillna('').astype(str).map(clean_text).tolist())
+                            # Normalize predictions to 'spam'/'ham' strings if needed
+                            if isinstance(preds[0], (int, float)):
+                                y_pred_bin = [1 if int(p) == 1 else 0 for p in preds]
+                                y_true_bin = [(1 if v == 'spam' else 0) for v in y_true]
+                            else:
+                                y_pred_bin = [1 if str(p).strip().lower() == 'spam' else 0 for p in preds]
+                                y_true_bin = [(1 if v == 'spam' else 0) for v in y_true]
+
+                            cm = confusion_matrix(y_true_bin, y_pred_bin)
+                            cm_df = pd.DataFrame(cm, index=['ham', 'spam'], columns=['pred_ham', 'pred_spam'])
+                            if PLOTTING_AVAILABLE:
+                                fig, ax = plt.subplots(figsize=(4, 3))
+                                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False, ax=ax,
+                                            xticklabels=['ham', 'spam'], yticklabels=['ham', 'spam'])
+                                ax.set_xlabel('Predicted')
+                                ax.set_ylabel('Actual')
+                                ax.set_title('Confusion Matrix (full dataset)')
+                                st.pyplot(fig)
+                            else:
+                                st.table(cm_df)
+                        except Exception as e:
+                            st.error(f"Failed to compute confusion matrix: {e}")
+                    except Exception as e:
+                        st.error(f"Failed to load/parse dataset: {e}")
         
     # Add footer
     st.markdown("---")
