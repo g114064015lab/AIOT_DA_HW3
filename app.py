@@ -1,8 +1,25 @@
 import streamlit as st
 import joblib
 import os
-from src.preprocess import clean_text
 import pandas as pd
+import re
+import string
+
+def clean_text(text):
+    """Clean and preprocess text"""
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove URLs
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+    
+    # Remove punctuation
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    
+    return text
 
 # Set page title and favicon
 st.set_page_config(
@@ -13,16 +30,30 @@ st.set_page_config(
 def train_model():
     """Train a new model if one doesn't exist"""
     import pandas as pd
-    from src.train import train_model
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.naive_bayes import MultinomialNB
+    from sklearn.pipeline import Pipeline
     
     # Download dataset
     url = "https://raw.githubusercontent.com/g114064015lab/AIOT_DA_HW3/master/data/sms_spam_no_header.csv"
     try:
+        # Download and prepare data
         df = pd.read_csv(url, encoding='latin-1', names=['label', 'text'])
         df['label'] = (df['label'] == 'spam').astype(int)
         
-        # Train model
-        model = train_model(df['text'], df['label'])
+        # Create and train the model
+        model = Pipeline([
+            ('tfidf', TfidfVectorizer(
+                strip_accents='unicode',
+                ngram_range=(1, 2),
+                stop_words='english',
+                max_features=10000
+            )),
+            ('clf', MultinomialNB())
+        ])
+        
+        # Train the model
+        model.fit(df['text'], df['label'])
         
         # Create models directory if it doesn't exist
         os.makedirs('models', exist_ok=True)
