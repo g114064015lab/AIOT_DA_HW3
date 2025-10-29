@@ -34,12 +34,13 @@ def train_model():
     from sklearn.naive_bayes import MultinomialNB
     from sklearn.pipeline import Pipeline
     
-    # Download dataset
-    url = "https://raw.githubusercontent.com/g114064015lab/AIOT_DA_HW3/master/data/sms_spam_no_header.csv"
+    # Use a public dataset URL
+    url = "https://raw.githubusercontent.com/mohitgupta-omg/Kaggle-SMS-Spam-Detection/master/spam.csv"
     try:
         # Download and prepare data
-        df = pd.read_csv(url, encoding='latin-1', names=['label', 'text'])
-        df['label'] = (df['label'] == 'spam').astype(int)
+        df = pd.read_csv(url, encoding='latin-1')
+        df['label'] = (df['v1'] == 'spam').astype(int)
+        df['text'] = df['v2']
         
         # Create and train the model
         model = Pipeline([
