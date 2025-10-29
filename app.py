@@ -292,9 +292,17 @@ with st.expander("📊 Dataset Analysis", expanded=True):
                 'Label': ['Ham', 'Spam'],
                 'Count': [ham_count, spam_count]
             })
-            ax = sns.barplot(x='Label', y='Count', data=data, palette="rocket", linewidth=1.5, edgecolor='black')
-            for patch in ax.patches:
-                patch.set_facecolor((patch.get_facecolor()[0], patch.get_facecolor()[1], patch.get_facecolor()[2], 0.8))
+            sns.set_theme(style="whitegrid", context="talk")
+
+            fig, ax = plt.subplots(figsize=(8, 5))
+            sns.barplot(
+                x='Label', y='Count', data=data,
+                palette="blend:#4B0082,#FFB6C1",  
+                edgecolor='black', linewidth=1.2, width=0.6, ax=ax
+            )
+            
+            ax.bar_label(ax.containers[0], fmt='%d', label_type='edge', fontsize=10)
+            plt.title("Label Counts", fontsize=16, fontweight='bold')
             sns.despine()
             plt.title('Message Distribution')
             st.pyplot(fig)
