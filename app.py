@@ -321,9 +321,7 @@ with st.expander("📊 Dataset Analysis", expanded=True):
             if PLOTTING_AVAILABLE:
                 fig, ax = plt.subplots(figsize=(10, 6))
                 words, counts = zip(*common_words)
-                colors = ["#FF0000", "#FFA500", "#FFFF00"]
-                cmap = LinearSegmentedColormap.from_list("red_orange_yellow", colors, N=len(counts))
-                custom_palette = [cmap(i / (len(counts) - 1)) for i in range(len(counts))]
+                custom_palette = sns.color_palette("blend:#FF0000,#FFA500,#FFFF00")
                 sns.barplot(x=list(counts), y=list(words), palette=custom_palette)
                 plt.title(f'Top {top_n} Words')
                 st.pyplot(fig)
