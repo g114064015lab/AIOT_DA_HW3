@@ -374,27 +374,6 @@ with st.expander("📊 Dataset Analysis", expanded=True):
 # Model information and dataset analysis - always expanded
 with st.expander("ℹ️ Model Information & Analysis", expanded=True):
     if model is not None:
-        # Load saved metrics if available
-        metrics_path = os.path.join(os.path.dirname(model_path), 'metrics.json')
-        try:
-            with open(metrics_path) as f:
-                metrics = json.load(f)
-            st.write("### Model Performance")
-            metrics_df = pd.DataFrame({
-                'Metric': ['Accuracy', 'Precision', 'Recall', 'F1'],
-                'Score': [
-                    metrics.get('accuracy', 'N/A'),
-                    metrics.get('precision', 'N/A'),
-                    metrics.get('recall', 'N/A'),
-                    metrics.get('f1', 'N/A')
-                ]
-            }).set_index('Metric')
-            st.dataframe(metrics_df)
-        except Exception:
-            st.warning("⚠️ No metrics file found. Enable 'Force retrain' in the sidebar to generate metrics.")
-            if not force_retrain:
-                st.info("👉 Click the 'Force retrain' checkbox in the sidebar to train the model and generate metrics.")
-
         st.write("### Model Configuration")
         st.markdown(f"""
         - **Model Type**: Logistic Regression with TF-IDF
