@@ -1,5 +1,6 @@
 """Streamlit app for SMS spam classification."""
 import os
+from io import StringIO
 import joblib
 import streamlit as st
 import pandas as pd
@@ -54,16 +55,18 @@ def clean_text(text: str) -> str:
 def load_default_dataset() -> Optional[pd.DataFrame]:
     """Load dataset from default URL if not available locally."""
     try:
+        st.info("📥 Downloading default dataset...")
         response = requests.get(DEFAULT_DATASET_URL)
         response.raise_for_status()
         data = response.content.decode('utf-8')
-        df = pd.read_csv(pd.StringIO(data), header=None, names=['label', 'text'])
+        df = pd.read_csv(StringIO(data), header=None, names=['label', 'text'])
         df['label'] = df['label'].astype(str).str.strip().str.lower()
         df = df[df['label'].isin(['ham', 'spam'])].copy()
         df['text'] = df['text'].fillna('').astype(str)
+        st.success("✅ Default dataset loaded successfully!")
         return df
     except Exception as e:
-        st.warning(f"Could not load default dataset: {e}")
+        st.error(f"Could not load default dataset: {str(e)}")
         return None
 
 def load_dataset(file_path: Optional[str] = None, 
@@ -144,7 +147,7 @@ def load_or_train_model(model_path: str,
         return None, f"Error training model: {str(e)}"
 
 # Page config and title
-st.set_page_config(page_title="SMS Spam Classifier", page_icon="📱")
+st.set_page_config(page_title="SMS Spam Classifier", page_icon="📱", layout="wide")
 
 # Sidebar configuration
 with st.sidebar:
@@ -226,12 +229,12 @@ if error:
 # Message input and prediction
 col1, col2 = st.columns([3, 1])
 with col1:
-    message = st.text_area("Enter a message to classify:", value="", key="message_input")
+    message = st.text_area("Enter a message to classify:", value="", key="message_input", height=100)
 with col2:
+    st.write("")  # Add spacing
     detect_button = st.button("🔍 Detect Spam", type="primary", use_container_width=True)
     if detect_button:
-        st.markdown("<br>", unsafe_allow_html=True)  # Add spacing
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.write("")  # Add spacing
 
 if detect_button and message and model is not None:
     with st.spinner("Analyzing message..."):
@@ -260,12 +263,12 @@ if detect_button and message and model is not None:
             st.progress(float(y_prob[1]))
         
         # Show preprocessing steps
-        with st.expander("🔍 View text preprocessing steps"):
+        with st.expander("🔍 View text preprocessing steps", expanded=True):
             st.write("Original:", message)
             st.write("Cleaned:", cleaned)
 
-# Dataset analysis
-with st.expander("📊 Dataset Analysis"):
+# Dataset analysis - always expanded
+with st.expander("📊 Dataset Analysis", expanded=True):
     # Try to get dataset from various sources
     df = None
     if dataset_source == "Upload CSV" and uploaded_file is not None:
@@ -275,7 +278,6 @@ with st.expander("📊 Dataset Analysis"):
     
     # If no dataset found, try loading default
     if df is None:
-        st.info("Loading default dataset from URL...")
         df = load_default_dataset()
         
     if df is not None:
@@ -297,10 +299,9 @@ with st.expander("📊 Dataset Analysis"):
             st.write(f"Ham messages: {ham_count}")
             st.write(f"Spam messages: {spam_count}")
         
-        # Word frequency analysis
-        if st.checkbox("Show word frequency analysis"):
-            st.write("Computing word frequencies...")
-            
+        # Word frequency analysis (always show)
+        st.write("### Word Frequencies")
+        with st.spinner("Computing word frequencies..."):
             # Get clean texts
             texts = df['text'].fillna('').astype(str).map(clean_text)
             
@@ -329,7 +330,7 @@ with st.expander("📊 Dataset Analysis"):
                     st.write(f"- {word}: {count}")
             
             # Add per-class word frequencies
-            st.subheader("Word frequencies by class")
+            st.write("### Word frequencies by class")
             col1, col2 = st.columns(2)
             
             with col1:
@@ -370,15 +371,15 @@ with st.expander("📊 Dataset Analysis"):
                     for word, count in ham_common:
                         st.write(f"- {word}: {count}")
 
-# Model information and dataset analysis
-with st.expander("ℹ️ Model Information & Analysis"):
+# Model information and dataset analysis - always expanded
+with st.expander("ℹ️ Model Information & Analysis", expanded=True):
     if model is not None:
         # Load saved metrics if available
         metrics_path = os.path.join(os.path.dirname(model_path), 'metrics.json')
         try:
             with open(metrics_path) as f:
                 metrics = json.load(f)
-            st.write("Model Performance:")
+            st.write("### Model Performance")
             metrics_df = pd.DataFrame({
                 'Metric': ['Accuracy', 'Precision', 'Recall', 'F1'],
                 'Score': [
@@ -390,11 +391,11 @@ with st.expander("ℹ️ Model Information & Analysis"):
             }).set_index('Metric')
             st.dataframe(metrics_df)
         except Exception:
-            st.warning("No metrics file found. Check the Force retrain option to generate metrics.")
-            # Try to force retrain if no metrics
+            st.warning("⚠️ No metrics file found. Enable 'Force retrain' in the sidebar to generate metrics.")
             if not force_retrain:
-                st.info("Try enabling 'Force retrain' in the sidebar to generate metrics with the current dataset.")
+                st.info("👉 Click the 'Force retrain' checkbox in the sidebar to train the model and generate metrics.")
 
+        st.write("### Model Configuration")
         st.markdown(f"""
         - **Model Type**: Logistic Regression with TF-IDF
         - **Features**: Word bigrams
