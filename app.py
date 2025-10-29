@@ -321,7 +321,8 @@ with st.expander("📊 Dataset Analysis", expanded=True):
             if PLOTTING_AVAILABLE:
                 fig, ax = plt.subplots(figsize=(10, 6))
                 words, counts = zip(*common_words)
-                sns.barplot(x=list(counts), y=list(words))
+                custom_palette = sns.color_palette("blend:#FF0000,#FFA500", as_cmap=False)
+                sns.barplot(x=list(counts), y=list(words), palette=custom_palette)
                 plt.title(f'Top {top_n} Words')
                 st.pyplot(fig)
             else:
