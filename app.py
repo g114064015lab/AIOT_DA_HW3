@@ -296,20 +296,15 @@ with st.expander("📊 Dataset Analysis", expanded=True):
             fig, ax = plt.subplots(figsize=(8, 5))
             
             
-            bars = sns.barplot(
-                x='Label', y='Count', data=data,
-                color='white',              
-                edgecolor='#FF69B4',        
-                linewidth=2.5,              
-                width=0.6
-            )
+            bars = sns.barplot(x='Label', y='Count', data=data, color='white', edgecolor='black', linewidth=1.5)
+        
+            for patch in ax.patches:
+                patch.set_hatch('//')         
+                patch.set_facecolor('#FF69B4') 
+                patch.set_edgecolor('black')   
             
-            
-            ax.grid(color='#FFB6C1', linestyle='-', linewidth=1.2)
-            
-            
-            ax.set_facecolor('white')       
-            sns.despine(left=True, bottom=True)  
+            ax.grid(color='#FFC0CB', linestyle='--', linewidth=1)
+            sns.despine(left=True, bottom=True) 
             plt.title('Message Distribution')
             st.pyplot(fig)
         else:
