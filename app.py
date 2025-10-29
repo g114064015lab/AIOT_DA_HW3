@@ -56,22 +56,29 @@ def train_model():
         # Train the model
         model.fit(df['text'], df['label'])
         
-        # Create models directory if it doesn't exist
-        os.makedirs('models', exist_ok=True)
-        
         # Save model
-        joblib.dump(model, 'models/final_model.pkl')
+        model_path = os.path.join(os.getcwd(), 'models', 'final_model.pkl')
+        joblib.dump(model, model_path)
         return model
     except Exception as e:
         st.error(f"Error training model: {str(e)}")
+        st.error(f"Current working directory: {os.getcwd()}")
+        st.error(f"Directory contents: {os.listdir()}")
         return None
 
 def load_model():
-    model_path = "models/final_model.pkl"
-    if not os.path.exists(model_path):
-        st.warning("⚠️ Model not found! Training a new model...")
+    try:
+        # Try to create models directory
+        os.makedirs('models', exist_ok=True)
+        
+        model_path = os.path.join(os.getcwd(), 'models', 'final_model.pkl')
+        if not os.path.exists(model_path):
+            st.warning("⚠️ Model not found! Training a new model...")
+            return train_model()
+        return joblib.load(model_path)
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
         return train_model()
-    return joblib.load(model_path)
 
 def main():
     # Header with styling
