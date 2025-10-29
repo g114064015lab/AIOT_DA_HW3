@@ -299,7 +299,8 @@ with st.expander("📊 Dataset Analysis", expanded=True):
             bars = sns.barplot(x='Label', y='Count', data=data, color='white', edgecolor='black', linewidth=1.5)
         
             for patch in ax.patches:
-                patch.set_hatch('//')         
+                patch.set_hatch('//')
+                patch.set_facecolor('#FFB6C1')
                 patch.set_edgecolor('#FF69B4')   
             
             ax.grid(color='#FFC0CB', linestyle='--', linewidth=1)
