@@ -6,6 +6,7 @@ import pandas as pd
 import re
 import string
 import json
+import requests
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer, ENGLISH_STOP_WORDS
 from sklearn.naive_bayes import MultinomialNB
@@ -49,6 +50,22 @@ def clean_text(text: str) -> str:
     
     return text
 
+@st.cache_data  # Cache the dataset loading
+def load_default_dataset() -> Optional[pd.DataFrame]:
+    """Load dataset from default URL if not available locally."""
+    try:
+        response = requests.get(DEFAULT_DATASET_URL)
+        response.raise_for_status()
+        data = response.content.decode('utf-8')
+        df = pd.read_csv(pd.StringIO(data), header=None, names=['label', 'text'])
+        df['label'] = df['label'].astype(str).str.strip().str.lower()
+        df = df[df['label'].isin(['ham', 'spam'])].copy()
+        df['text'] = df['text'].fillna('').astype(str)
+        return df
+    except Exception as e:
+        st.warning(f"Could not load default dataset: {e}")
+        return None
+
 def load_dataset(file_path: Optional[str] = None, 
                 uploaded_file: Optional[st.runtime.uploaded_file_manager.UploadedFile] = None) -> Tuple[Optional[pd.DataFrame], str]:
     """Load dataset from file path or uploaded file, return (dataframe, error_message)"""
@@ -58,7 +75,11 @@ def load_dataset(file_path: Optional[str] = None,
         elif file_path and os.path.exists(file_path):
             df = pd.read_csv(file_path, header=None, names=['label', 'text'], encoding='utf-8')
         else:
-            return None, f"Dataset not found at {file_path}. Please upload a CSV file or check the path."
+            # Try loading default dataset
+            df = load_default_dataset()
+            if df is None:
+                return None, f"Dataset not found at {file_path}. Please upload a CSV file or check the path."
+            return df, ""
         
         # Validate and clean
         df['label'] = df['label'].astype(str).str.strip().str.lower()
@@ -203,126 +224,183 @@ if error:
         )
 
 # Message input and prediction
-message = st.text_area("Enter a message to classify:", value="", key="message_input")
+col1, col2 = st.columns([3, 1])
+with col1:
+    message = st.text_area("Enter a message to classify:", value="", key="message_input")
+with col2:
+    detect_button = st.button("🔍 Detect Spam", type="primary", use_container_width=True)
+    if detect_button:
+        st.markdown("<br>", unsafe_allow_html=True)  # Add spacing
+        st.markdown("<br>", unsafe_allow_html=True)
 
-if message and model is not None:
-    # Clean the message
-    cleaned = clean_text(message)
-    
-    # Make prediction with threshold
-    y_prob = model.predict_proba([cleaned])[0]
-    is_spam = y_prob[1] >= decision_threshold
-    
-    # Show prediction with probability
-    prob_spam = y_prob[1]
-    
-    if is_spam:
-        st.error(f"🚨 Spam detected! (confidence: {prob_spam:.1%})")
-    else:
-        st.success(f"✅ Message looks legitimate (confidence: {1-prob_spam:.1%})")
-    
-    # Probability bars
-    col1, col2 = st.columns(2)
-    with col1:
-        st.write("Ham probability:")
-        st.progress(float(y_prob[0]))
-    with col2:
-        st.write("Spam probability:")
-        st.progress(float(y_prob[1]))
-    
-    # Show preprocessing steps
-    with st.expander("🔍 View text preprocessing steps"):
-        st.write("Original:", message)
-        st.write("Cleaned:", cleaned)
-    
-    # Dataset analysis
-    with st.expander("📊 Dataset Analysis"):
-        if dataset_source == "Upload CSV" and uploaded_file is not None:
-            df = pd.read_csv(uploaded_file, header=None, names=['label', 'text'])
-        elif os.path.exists(dataset_path or ""):
-            df = pd.read_csv(dataset_path, header=None, names=['label', 'text'])
+if detect_button and message and model is not None:
+    with st.spinner("Analyzing message..."):
+        # Clean the message
+        cleaned = clean_text(message)
+        
+        # Make prediction with threshold
+        y_prob = model.predict_proba([cleaned])[0]
+        is_spam = y_prob[1] >= decision_threshold
+        
+        # Show prediction with probability
+        prob_spam = y_prob[1]
+        
+        if is_spam:
+            st.error(f"🚨 Spam detected! (confidence: {prob_spam:.1%})")
         else:
-            st.warning("No dataset available for analysis")
-            df = None
+            st.success(f"✅ Message looks legitimate (confidence: {1-prob_spam:.1%})")
+        
+        # Probability bars
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("Ham probability:")
+            st.progress(float(y_prob[0]))
+        with col2:
+            st.write("Spam probability:")
+            st.progress(float(y_prob[1]))
+        
+        # Show preprocessing steps
+        with st.expander("🔍 View text preprocessing steps"):
+            st.write("Original:", message)
+            st.write("Cleaned:", cleaned)
+
+# Dataset analysis
+with st.expander("📊 Dataset Analysis"):
+    # Try to get dataset from various sources
+    df = None
+    if dataset_source == "Upload CSV" and uploaded_file is not None:
+        df = pd.read_csv(uploaded_file, header=None, names=['label', 'text'])
+    elif os.path.exists(dataset_path or ""):
+        df = pd.read_csv(dataset_path, header=None, names=['label', 'text'])
+    
+    # If no dataset found, try loading default
+    if df is None:
+        st.info("Loading default dataset from URL...")
+        df = load_default_dataset()
+        
+    if df is not None:
+        st.write(f"Total messages: {len(df)}")
+        spam_count = (df['label'].str.lower() == 'spam').sum()
+        ham_count = (df['label'].str.lower() == 'ham').sum()
+        
+        # Distribution plot
+        if PLOTTING_AVAILABLE:
+            fig, ax = plt.subplots()
+            data = pd.DataFrame({
+                'Label': ['Ham', 'Spam'],
+                'Count': [ham_count, spam_count]
+            })
+            sns.barplot(x='Label', y='Count', data=data)
+            plt.title('Message Distribution')
+            st.pyplot(fig)
+        else:
+            st.write(f"Ham messages: {ham_count}")
+            st.write(f"Spam messages: {spam_count}")
+        
+        # Word frequency analysis
+        if st.checkbox("Show word frequency analysis"):
+            st.write("Computing word frequencies...")
             
-        if df is not None:
-            st.write(f"Total messages: {len(df)}")
-            spam_count = (df['label'].str.lower() == 'spam').sum()
-            ham_count = (df['label'].str.lower() == 'ham').sum()
+            # Get clean texts
+            texts = df['text'].fillna('').astype(str).map(clean_text)
             
-            # Distribution plot
+            # Compute word frequencies
+            words = []
+            for text in texts:
+                words.extend(text.split())
+            
+            # Remove stopwords
+            stopwords = set(ENGLISH_STOP_WORDS)
+            word_freq = Counter(w for w in words if w not in stopwords)
+            
+            # Plot top words
+            top_n = 20
+            common_words = word_freq.most_common(top_n)
+            
             if PLOTTING_AVAILABLE:
-                fig, ax = plt.subplots()
-                data = pd.DataFrame({
-                    'Label': ['Ham', 'Spam'],
-                    'Count': [ham_count, spam_count]
-                })
-                sns.barplot(x='Label', y='Count', data=data)
-                plt.title('Message Distribution')
+                fig, ax = plt.subplots(figsize=(10, 6))
+                words, counts = zip(*common_words)
+                sns.barplot(x=list(counts), y=list(words))
+                plt.title(f'Top {top_n} Words')
                 st.pyplot(fig)
             else:
-                st.write(f"Ham messages: {ham_count}")
-                st.write(f"Spam messages: {spam_count}")
+                st.write(f"Top {top_n} words:")
+                for word, count in common_words:
+                    st.write(f"- {word}: {count}")
             
-            # Word frequency analysis
-            if st.checkbox("Show word frequency analysis"):
-                st.write("Computing word frequencies...")
-                
-                # Get clean texts
-                texts = df['text'].fillna('').astype(str).map(clean_text)
-                
-                # Compute word frequencies
-                words = []
-                for text in texts:
-                    words.extend(text.split())
-                
-                # Remove stopwords
-                stopwords = set(ENGLISH_STOP_WORDS)
-                word_freq = Counter(w for w in words if w not in stopwords)
-                
-                # Plot top words
-                top_n = 20
-                common_words = word_freq.most_common(top_n)
+            # Add per-class word frequencies
+            st.subheader("Word frequencies by class")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.write("Top words in spam messages:")
+                spam_texts = texts[df['label'] == 'spam']
+                spam_words = []
+                for text in spam_texts:
+                    spam_words.extend(text.split())
+                spam_freq = Counter(w for w in spam_words if w not in stopwords)
+                spam_common = spam_freq.most_common(10)
                 
                 if PLOTTING_AVAILABLE:
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    words, counts = zip(*common_words)
+                    fig, ax = plt.subplots(figsize=(8, 4))
+                    words, counts = zip(*spam_common)
                     sns.barplot(x=list(counts), y=list(words))
-                    plt.title(f'Top {top_n} Words')
+                    plt.title('Top Spam Words')
                     st.pyplot(fig)
                 else:
-                    st.write(f"Top {top_n} words:")
-                    for word, count in common_words:
+                    for word, count in spam_common:
                         st.write(f"- {word}: {count}")
-    
-    # Model information and dataset analysis
-    with st.expander("ℹ️ Model Information & Analysis"):
-        if model is not None:
-            # Load saved metrics if available
-            metrics_path = os.path.join(os.path.dirname(model_path), 'metrics.json')
-            try:
-                with open(metrics_path) as f:
-                    metrics = json.load(f)
-                st.write("Model Performance:")
-                metrics_df = pd.DataFrame({
-                    'Metric': ['Accuracy', 'Precision', 'Recall', 'F1'],
-                    'Score': [
-                        metrics.get('accuracy', 'N/A'),
-                        metrics.get('precision', 'N/A'),
-                        metrics.get('recall', 'N/A'),
-                        metrics.get('f1', 'N/A')
-                    ]
-                }).set_index('Metric')
-                st.dataframe(metrics_df)
-            except Exception:
-                st.warning("No metrics file found. Retrain model to generate metrics.")
+                        
+            with col2:
+                st.write("Top words in ham messages:")
+                ham_texts = texts[df['label'] == 'ham']
+                ham_words = []
+                for text in ham_texts:
+                    ham_words.extend(text.split())
+                ham_freq = Counter(w for w in ham_words if w not in stopwords)
+                ham_common = ham_freq.most_common(10)
+                
+                if PLOTTING_AVAILABLE:
+                    fig, ax = plt.subplots(figsize=(8, 4))
+                    words, counts = zip(*ham_common)
+                    sns.barplot(x=list(counts), y=list(words))
+                    plt.title('Top Ham Words')
+                    st.pyplot(fig)
+                else:
+                    for word, count in ham_common:
+                        st.write(f"- {word}: {count}")
 
-            st.markdown(f"""
-            - **Model Type**: Logistic Regression with TF-IDF
-            - **Features**: Word bigrams
-            - **Text Processing**: URL removal, case normalization, special character removal
-            - **Settings**:
-                - Decision threshold: {decision_threshold:.2f}
-                - Random seed: {random_seed}
-                - Dataset: {"Uploaded file" if dataset_source == "Upload CSV" else dataset_path}
-            """)
+# Model information and dataset analysis
+with st.expander("ℹ️ Model Information & Analysis"):
+    if model is not None:
+        # Load saved metrics if available
+        metrics_path = os.path.join(os.path.dirname(model_path), 'metrics.json')
+        try:
+            with open(metrics_path) as f:
+                metrics = json.load(f)
+            st.write("Model Performance:")
+            metrics_df = pd.DataFrame({
+                'Metric': ['Accuracy', 'Precision', 'Recall', 'F1'],
+                'Score': [
+                    metrics.get('accuracy', 'N/A'),
+                    metrics.get('precision', 'N/A'),
+                    metrics.get('recall', 'N/A'),
+                    metrics.get('f1', 'N/A')
+                ]
+            }).set_index('Metric')
+            st.dataframe(metrics_df)
+        except Exception:
+            st.warning("No metrics file found. Check the Force retrain option to generate metrics.")
+            # Try to force retrain if no metrics
+            if not force_retrain:
+                st.info("Try enabling 'Force retrain' in the sidebar to generate metrics with the current dataset.")
+
+        st.markdown(f"""
+        - **Model Type**: Logistic Regression with TF-IDF
+        - **Features**: Word bigrams
+        - **Text Processing**: URL removal, case normalization, special character removal
+        - **Settings**:
+            - Decision threshold: {decision_threshold:.2f}
+            - Random seed: {random_seed}
+            - Dataset: {"Uploaded file" if dataset_source == "Upload CSV" else dataset_path}
+        """)
