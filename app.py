@@ -300,7 +300,7 @@ with st.expander("📊 Dataset Analysis", expanded=True):
         
             for patch in ax.patches:
                 patch.set_hatch('//')
-                patch.set_facecolor('#FFB6C1')
+                patch.set_facecolor('#FFD6E8')
                 patch.set_edgecolor('#FF69B4')   
             
             ax.grid(color='#FFC0CB', linestyle='--', linewidth=1)
