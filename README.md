@@ -6,7 +6,7 @@ A simple but effective spam classifier using scikit-learn. Includes preprocessin
 
 🔗 **Try it now:** [SMS Spam Classifier Web App](https://g114064015lab-aiot-da-hw3-app-qw62t5.streamlit.app)
 
-## Quick Start
+## 🚀Quick Start
 
 ```bash
 # Install dependencies
