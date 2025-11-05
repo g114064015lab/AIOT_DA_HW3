@@ -21,7 +21,7 @@ streamlit run app.py
 # Or make predictions from command line
 python scripts/predict.py --message "WINNER!! You have won £1000, call now to claim!"
 ```
-📊## Dataset Reference
+## 📊Dataset Reference
 
 The dataset used in this project is sourced from the book **"Hands-On Artificial Intelligence for Cybersecurity"** by PacktPublishing.
 
