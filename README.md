@@ -21,7 +21,8 @@ streamlit run app.py
 # Or make predictions from command line
 python scripts/predict.py --message "WINNER!! You have won £1000, call now to claim!"
 ```
-
+## Data Set
+**Data set URL:** (https://github.com/PacktPublishing/Hands-On-Artificial-Intelligence-for-Cybersecurity/blob/master/Chapter03/datasets/sms_spam_no_header.csv)
 ## Web Interface
 
 The project includes a user-friendly web interface built with Streamlit. To use it:
