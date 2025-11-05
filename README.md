@@ -23,7 +23,7 @@ python scripts/predict.py --message "WINNER!! You have won £1000, call now to c
 ```
 ## Dataset Reference
 
-The dataset used in this project is sourced from the book **"Hands-On Artificial Intelligence for Cybersecurity"** by Packt Publishing.
+The dataset used in this project is sourced from the book **"Hands-On Artificial Intelligence for Cybersecurity"** by PacktPublishing.
 
 **File:** [`sms_spam_no_header.csv`](https://github.com/PacktPublishing/Hands-On-Artificial-Intelligence-for-Cybersecurity/blob/master/Chapter03/datasets/sms_spam_no_header.csv)  
 **Repository:** [PacktPublishing/Hands-On-Artificial-Intelligence-for-Cybersecurity](https://github.com/PacktPublishing/Hands-On-Artificial-Intelligence-for-Cybersecurity/tree/master)  
