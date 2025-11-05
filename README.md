@@ -21,8 +21,14 @@ streamlit run app.py
 # Or make predictions from command line
 python scripts/predict.py --message "WINNER!! You have won £1000, call now to claim!"
 ```
-## Data Set
-**Data set URL:** (https://github.com/PacktPublishing/Hands-On-Artificial-Intelligence-for-Cybersecurity/blob/master/Chapter03/datasets/sms_spam_no_header.csv)
+## Dataset Reference
+
+The dataset used in this project is sourced from the book **"Hands-On Artificial Intelligence for Cybersecurity"** by Packt Publishing.
+
+**File:** [`sms_spam_no_header.csv`](https://github.com/PacktPublishing/Hands-On-Artificial-Intelligence-for-Cybersecurity/blob/master/chapter3/dataset/sms_spam_no_header.csv)  
+**Repository:** [PacktPublishing/Hands-On-Artificial-Intelligence-for-Cybersecurity](https://github.com/PacktPublishing/Hands-On-Artificial-Intelligence-for-Cybersecurity)  
+**Chapter:** Chapter 3 — SMS Spam Detection  
+
 ## Web Interface
 
 The project includes a user-friendly web interface built with Streamlit. To use it:
